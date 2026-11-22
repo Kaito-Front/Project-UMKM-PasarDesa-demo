@@ -1,11 +1,11 @@
 class ApiConstants {
   // Gunakan 10.0.2.2 untuk Android Emulator, atau 172.16.12.234 untuk HP fisik via Wi-Fi/LAN
+  static const String productionBaseUrl = 'https://umkmdesa.smkn1sumedang.sch.id/api';
   static const String emulatorBaseUrl = 'http://10.0.2.2:8000/api';
   static const String lanBaseUrl = 'http://172.16.12.234:8000/api';
 
-  // Default aktif untuk emulator
-  static String activeBaseUrl = emulatorBaseUrl;
-
+  static String activeBaseUrl = productionBaseUrl;
+  // Endpoint di bawah ini tidak perlu diubah sama sekali:
   static const String products = '/products';
   static const String categories = '/categories';
   static const String shops = '/shops';

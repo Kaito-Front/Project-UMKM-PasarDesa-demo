@@ -81,6 +81,11 @@ export function AppProvider({ children }) {
   const openAuth = (mode = 'masuk') => {
     setAuthMode(mode);
     setWebPage('auth');
+    if (currentView === 'mobile') {
+      setCurrentView('web');
+    }
+    setIsCartOpen(false);
+    setIsCheckoutOpen(false);
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
   };
 
@@ -165,7 +170,21 @@ export function AppProvider({ children }) {
     setIsLoggedIn(false);
   };
 
+  const handleSetIsCartOpen = (isOpen) => {
+    if (isOpen && !isLoggedIn) {
+      triggerNotification('Perlu Masuk Akun', 'Silakan masuk ke akun Anda terlebih dahulu untuk membuka keranjang belanja.');
+      openAuth('masuk');
+      return;
+    }
+    setIsCartOpen(isOpen);
+  };
+
   const addToCart = (product, qty = 1, note = '') => {
+    if (!isLoggedIn) {
+      triggerNotification('Perlu Masuk Akun', 'Silakan masuk ke akun Anda terlebih dahulu untuk menambahkan produk ke keranjang.');
+      openAuth('masuk');
+      return;
+    }
     setCart(prev => {
       const existingIndex = prev.findIndex(item => item.productId === product.id);
       if (existingIndex > -1) {
@@ -212,7 +231,13 @@ export function AppProvider({ children }) {
 
   const cartCount = cart.reduce((sum, item) => sum + item.qty, 0);
   const cartSubtotal = cart.reduce((sum, item) => sum + (item.product.price * item.qty), 0);
+
   const openDirectCheckout = (product, qty = 1, note = '') => {
+    if (!isLoggedIn) {
+      triggerNotification('Perlu Masuk Akun', 'Silakan masuk ke akun Anda terlebih dahulu untuk melakukan pemesanan.');
+      openAuth('masuk');
+      return;
+    }
     setCheckoutDirectItem({
       productId: product.id,
       product,
@@ -221,7 +246,14 @@ export function AppProvider({ children }) {
     });
     setIsCheckoutOpen(true);
   };
+
   const openCartCheckout = () => {
+    if (!isLoggedIn) {
+      triggerNotification('Perlu Masuk Akun', 'Silakan masuk ke akun Anda terlebih dahulu untuk checkout.');
+      setIsCartOpen(false);
+      openAuth('masuk');
+      return;
+    }
     if (cart.length === 0) {
       triggerNotification('Keranjang Kosong', 'Silakan pilih dan masukkan produk ke keranjang terlebih dahulu.');
       return;
@@ -825,7 +857,7 @@ export function AppProvider({ children }) {
       updateCartQty,
       clearCart,
       isCartOpen,
-      setIsCartOpen,
+      setIsCartOpen: handleSetIsCartOpen,
       isCheckoutOpen,
       setIsCheckoutOpen,
       checkoutDirectItem,
