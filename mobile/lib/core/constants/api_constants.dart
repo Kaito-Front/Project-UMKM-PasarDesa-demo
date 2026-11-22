@@ -1,10 +1,17 @@
+import 'package:flutter/foundation.dart';
+
 class ApiConstants {
-  // Gunakan 10.0.2.2 untuk Android Emulator, atau 172.16.12.234 untuk HP fisik via Wi-Fi/LAN
+  // Alamat Server:
   static const String productionBaseUrl = 'https://umkmdesa.smkn1sumedang.sch.id/api';
   static const String emulatorBaseUrl = 'http://10.0.2.2:8000/api';
-  static const String lanBaseUrl = 'http://172.16.12.234:8000/api';
+  static const String lanBaseUrl = 'http://172.16.11.132:8000/api';
+  static const String localhostBaseUrl = 'http://127.0.0.1:8000/api';
 
-  static String activeBaseUrl = productionBaseUrl;
+  // Mode Pengembangan Lokal (Aktif):
+  // - Jika dijalankan di Web/Chrome, otomatis ke http://127.0.0.1:8000/api
+  // - Jika dijalankan di HP Android fisik, otomatis ke IP Wi-Fi http://172.16.11.132:8000/api
+  static String activeBaseUrl = kIsWeb ? localhostBaseUrl : lanBaseUrl;
+
   // Endpoint di bawah ini tidak perlu diubah sama sekali:
   static const String products = '/products';
   static const String categories = '/categories';

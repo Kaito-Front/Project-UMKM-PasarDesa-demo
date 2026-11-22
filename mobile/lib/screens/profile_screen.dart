@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../core/constants/api_constants.dart';
 import '../core/theme/desa_colors.dart';
 import '../providers/app_provider.dart';
 import '../widgets/edit_shop_modal.dart';
@@ -47,6 +48,109 @@ class ProfileScreen extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+
+  void _showServerSelector(BuildContext context, AppProvider provider) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return Container(
+          padding: const EdgeInsets.all(20),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(color: DesaColors.border, borderRadius: BorderRadius.circular(2)),
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Pilih Server Backend API',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: DesaColors.primary),
+              ),
+              const Text(
+                'Ubah target API sesuai lingkungan pengujian Anda',
+                style: TextStyle(fontSize: 12, color: DesaColors.muted),
+              ),
+              const SizedBox(height: 16),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.language, color: Colors.teal),
+                title: const Text('Lokal Web / Browser (127.0.0.1)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                subtitle: const Text('http://127.0.0.1:8000/api', style: TextStyle(fontSize: 11)),
+                trailing: ApiConstants.activeBaseUrl == ApiConstants.localhostBaseUrl
+                    ? const Icon(Icons.check_circle, color: Color(0xFF2E7D32))
+                    : null,
+                onTap: () {
+                  ApiConstants.activeBaseUrl = ApiConstants.localhostBaseUrl;
+                  provider.initData();
+                  provider.triggerToast('Server Backend', 'Dialihkan ke Lokal Browser (127.0.0.1:8000)');
+                  Navigator.pop(ctx);
+                },
+              ),
+              const Divider(height: 1),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.wifi, color: Color(0xFF2E7D32)),
+                title: const Text('Lokal HP Fisik (Wi-Fi LAN)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                subtitle: const Text('http://172.16.11.132:8000/api', style: TextStyle(fontSize: 11)),
+                trailing: ApiConstants.activeBaseUrl == ApiConstants.lanBaseUrl
+                    ? const Icon(Icons.check_circle, color: Color(0xFF2E7D32))
+                    : null,
+                onTap: () {
+                  ApiConstants.activeBaseUrl = ApiConstants.lanBaseUrl;
+                  provider.initData();
+                  provider.triggerToast('Server Backend', 'Dialihkan ke Lokal LAN (172.16.11.132:8000)');
+                  Navigator.pop(ctx);
+                },
+              ),
+              const Divider(height: 1),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.computer, color: DesaColors.accent),
+                title: const Text('Lokal Android Emulator', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                subtitle: const Text('http://10.0.2.2:8000/api', style: TextStyle(fontSize: 11)),
+                trailing: ApiConstants.activeBaseUrl == ApiConstants.emulatorBaseUrl
+                    ? const Icon(Icons.check_circle, color: Color(0xFF2E7D32))
+                    : null,
+                onTap: () {
+                  ApiConstants.activeBaseUrl = ApiConstants.emulatorBaseUrl;
+                  provider.initData();
+                  provider.triggerToast('Server Backend', 'Dialihkan ke Lokal Emulator (10.0.2.2:8000)');
+                  Navigator.pop(ctx);
+                },
+              ),
+              const Divider(height: 1),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.cloud_outlined, color: Colors.blue),
+                title: const Text('Server Hosting Publik', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                subtitle: const Text('https://umkmdesa.smkn1sumedang.sch.id/api', style: TextStyle(fontSize: 11)),
+                trailing: ApiConstants.activeBaseUrl == ApiConstants.productionBaseUrl
+                    ? const Icon(Icons.check_circle, color: Color(0xFF2E7D32))
+                    : null,
+                onTap: () {
+                  ApiConstants.activeBaseUrl = ApiConstants.productionBaseUrl;
+                  provider.initData();
+                  provider.triggerToast('Server Backend', 'Dialihkan ke Server Publik (Hosting)');
+                  Navigator.pop(ctx);
+                },
+              ),
+              const SizedBox(height: 10),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -316,6 +420,39 @@ class ProfileScreen extends StatelessWidget {
                         MaterialPageRoute(builder: (_) => const ChatAiScreen()),
                       );
                     },
+                  ),
+                  const Divider(height: 1),
+                  ListTile(
+                    leading: const Icon(Icons.dns_outlined, color: DesaColors.accent),
+                    title: const Text('Server Backend API', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                    subtitle: Text(
+                      ApiConstants.activeBaseUrl == ApiConstants.localhostBaseUrl
+                          ? 'Lokal Web / Browser (127.0.0.1:8000)'
+                          : ApiConstants.activeBaseUrl == ApiConstants.lanBaseUrl
+                              ? 'Lokal LAN Wi-Fi (172.16.11.132:8000)'
+                              : ApiConstants.activeBaseUrl == ApiConstants.emulatorBaseUrl
+                                  ? 'Lokal Android Emulator (10.0.2.2:8000)'
+                                  : 'Publik (umkmdesa.smkn1sumedang...)',
+                      style: const TextStyle(fontSize: 11, color: DesaColors.muted),
+                    ),
+                    trailing: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: ApiConstants.activeBaseUrl.contains('8000')
+                            ? const Color(0xFF2E7D32).withValues(alpha: 0.15)
+                            : Colors.blue.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        ApiConstants.activeBaseUrl.contains('8000') ? 'LOKAL' : 'PUBLIK',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: ApiConstants.activeBaseUrl.contains('8000') ? const Color(0xFF2E7D32) : Colors.blue,
+                        ),
+                      ),
+                    ),
+                    onTap: () => _showServerSelector(context, provider),
                   ),
                   const Divider(height: 1),
                   ListTile(
