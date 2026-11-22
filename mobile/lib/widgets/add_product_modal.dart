@@ -39,18 +39,22 @@ class _AddProductModalState extends State<AddProductModal> {
     if (!_formKey.currentState!.validate()) return;
 
     final provider = Provider.of<AppProvider>(context, listen: false);
+    final user = provider.currentUser;
+    final isShopApproved = user.shopStatus == 'aktif';
+
     final newProduct = Product(
       id: 'PROD-${DateTime.now().millisecondsSinceEpoch}',
       name: _nameCtrl.text.trim(),
       price: int.tryParse(_priceCtrl.text.trim()) ?? 25000,
       stock: int.tryParse(_stockCtrl.text.trim()) ?? 10,
       category: _category,
-      kecamatan: 'Sumedang Selatan',
-      shopName: provider.currentUser.shopName ?? 'Griya Tenun Lurik Lestari',
+      kecamatan: user.kecamatan ?? 'Kecamatan Sumedang Selatan',
+      shopName: user.shopName ?? 'Griya Tenun Lurik Lestari',
       imageUrl: 'assets/images/kain-lurik.jpg',
       description: _descCtrl.text.trim().isNotEmpty
           ? _descCtrl.text.trim()
           : 'Produk unggulan karya warga desa dengan bahan berkualitas alami.',
+      isHidden: !isShopApproved,
     );
 
     provider.addProduct(newProduct);
@@ -106,6 +110,29 @@ class _AddProductModalState extends State<AddProductModal> {
                 ],
               ),
               const Divider(height: 20),
+
+              // Status Kurasi Info Banner
+              Container(
+                margin: const EdgeInsets.only(bottom: 14),
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFF8E1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFFFE082)),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.info_outline, size: 18, color: Color(0xFFF57F17)),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Produk yang Anda tambahkan langsung tersimpan ke database & masuk antrean kurasi admin desa sebelum tayang publik.',
+                        style: TextStyle(fontSize: 10.5, color: Color(0xFFBF360C)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
 
               // Nama Produk
               const Text('Nama Produk', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),

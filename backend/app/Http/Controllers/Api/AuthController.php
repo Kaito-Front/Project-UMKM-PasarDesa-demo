@@ -316,6 +316,8 @@ class AuthController extends Controller
 
     private function serializeUser(User $user): array
     {
+        $shop = $user->shop_id ? Shop::find($user->shop_id) : null;
+
         return [
             'id' => (string) $user->id,
             'name' => $user->name,
@@ -324,8 +326,12 @@ class AuthController extends Controller
             'role' => $user->role,
             'avatar' => $user->avatar,
             'shopId' => $user->shop_id,
-            'shopName' => $user->shop_name,
-            'kecamatan' => $user->kecamatan,
+            'shopName' => $user->shop_name ?? $shop?->name,
+            'shopDescription' => $shop?->description ?? '',
+            'shopCategory' => $shop?->category ?? '',
+            'shopStatus' => $shop?->status ?? 'menunggu',
+            'shopVerified' => (bool) ($shop?->verified ?? false),
+            'kecamatan' => $user->kecamatan ?? $shop?->kecamatan,
             'isEmailVerified' => !is_null($user->email_verified_at),
             'emailVerifiedAt' => $user->email_verified_at ? $user->email_verified_at->toIso8601String() : null,
         ];

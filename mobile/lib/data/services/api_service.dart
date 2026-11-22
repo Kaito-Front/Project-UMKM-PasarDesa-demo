@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import '../models/product_model.dart';
 import '../models/category_model.dart';
 import '../models/order_model.dart';
+import '../models/user_model.dart';
 import '../../core/constants/api_constants.dart';
 
 class ApiService {
@@ -297,5 +298,141 @@ class ApiService {
     } catch (_) {}
 
     return 'Halo warga Sumedang! Saya Asisten AI Pasar Desa. Kami siap membantu Anda menemukan kain lurik otentik, keripik tempe renyah Cimalaka, madu murni Tampomas, hingga kerajinan anyaman bambu BUMDes.';
+  }
+
+  // Create Product directly to Backend & Database
+  Future<Product?> createProduct({
+    required String name,
+    required int price,
+    required int stock,
+    required String category,
+    required String description,
+    String? kecamatan,
+    String? shopId,
+    String? imageUrl,
+    String? token,
+  }) async {
+    try {
+      final headers = <String, String>{
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      };
+      if (token != null) headers['Authorization'] = 'Bearer $token';
+
+      final payload = <String, dynamic>{
+        'name': name,
+        'price': price,
+        'stock': stock,
+        'category': category,
+        'description': description,
+        'image': imageUrl ?? 'assets/images/kain-lurik.jpg',
+        'images': [imageUrl ?? 'assets/images/kain-lurik.jpg'],
+      };
+      if (kecamatan != null) payload['kecamatan'] = kecamatan;
+      if (shopId != null) payload['shopId'] = shopId;
+
+      final res = await http.post(
+        Uri.parse('${ApiConstants.activeBaseUrl}${ApiConstants.products}'),
+        headers: headers,
+        body: jsonEncode(payload),
+      ).timeout(const Duration(seconds: 8));
+
+      if (res.statusCode == 200 || res.statusCode == 201) {
+        final decoded = jsonDecode(res.body);
+        final data = decoded['data'] ?? decoded;
+        return Product.fromJson(data);
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  // Update Shop Profile & Description to Backend
+  Future<bool> updateShopProfile({
+    required String name,
+    required String description,
+    String? category,
+    String? kecamatan,
+    String? phone,
+    String? whatsapp,
+    String? token,
+  }) async {
+    try {
+      final headers = <String, String>{
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      };
+      if (token != null) headers['Authorization'] = 'Bearer $token';
+
+      final payload = <String, dynamic>{
+        'name': name,
+        'description': description,
+      };
+      if (category != null) payload['category'] = category;
+      if (kecamatan != null) payload['kecamatan'] = kecamatan;
+      if (phone != null) payload['phone'] = phone;
+      if (whatsapp != null) payload['whatsapp'] = whatsapp;
+
+      final res = await http.patch(
+        Uri.parse('${ApiConstants.activeBaseUrl}/auth/shop'),
+        headers: headers,
+        body: jsonEncode(payload),
+      ).timeout(const Duration(seconds: 8));
+
+      return res.statusCode == 200;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  // Update User Profile
+  Future<bool> updateUserProfile({
+    required String name,
+    required String phone,
+    String? kecamatan,
+    String? token,
+  }) async {
+    try {
+      final headers = <String, String>{
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      };
+      if (token != null) headers['Authorization'] = 'Bearer $token';
+
+      final payload = <String, dynamic>{
+        'name': name,
+        'phone': phone,
+      };
+      if (kecamatan != null) payload['kecamatan'] = kecamatan;
+
+      final res = await http.patch(
+        Uri.parse('${ApiConstants.activeBaseUrl}/auth/profile'),
+        headers: headers,
+        body: jsonEncode(payload),
+      ).timeout(const Duration(seconds: 8));
+
+      return res.statusCode == 200;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  // Login to Backend
+  Future<Map<String, dynamic>?> login(String identifier, String password) async {
+    try {
+      final res = await http.post(
+        Uri.parse('${ApiConstants.activeBaseUrl}${ApiConstants.login}'),
+        headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
+        body: jsonEncode({'identifier': identifier, 'password': password}),
+      ).timeout(const Duration(seconds: 8));
+
+      if (res.statusCode == 200) {
+        final decoded = jsonDecode(res.body);
+        return {
+          'token': decoded['token'],
+          'user': UserModel.fromJson(decoded['user']),
+        };
+      }
+    } catch (_) {}
+    return null;
   }
 }

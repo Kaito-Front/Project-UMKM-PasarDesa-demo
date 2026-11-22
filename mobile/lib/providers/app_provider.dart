@@ -277,9 +277,100 @@ class AppProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  void addProduct(Product product) {
-    _products.insert(0, product);
-    triggerToast('Produk Ditambahkan', '${product.name} berhasil dipublikasikan!');
+  String? _token;
+  String? get token => _token;
+  void setToken(String? t) {
+    _token = t;
     notifyListeners();
+  }
+
+  Future<void> addProduct(Product product) async {
+    _isLoading = true;
+    notifyListeners();
+
+    final created = await _apiService.createProduct(
+      name: product.name,
+      price: product.price,
+      stock: product.stock,
+      category: product.category,
+      description: product.description,
+      kecamatan: product.kecamatan,
+      shopId: _currentUser.shopId,
+      imageUrl: product.imageUrl,
+      token: _token,
+    );
+
+    _isLoading = false;
+    if (created != null) {
+      _products.insert(0, created);
+      if (created.isHidden) {
+        triggerToast('Produk Masuk Database!', '${created.name} berhasil tersimpan di database dan menunggu persetujuan admin desa.');
+      } else {
+        triggerToast('Produk Berhasil Terbit!', '${created.name} berhasil tersimpan di database & langsung tampil di website!');
+      }
+    } else {
+      // Fallback local
+      _products.insert(0, product);
+      triggerToast('Produk Ditambahkan (Lokal)', '${product.name} berhasil disimpan sementara.');
+    }
+    notifyListeners();
+  }
+
+  Future<bool> updateShopProfile({
+    required String name,
+    required String description,
+    String? category,
+    String? kecamatan,
+    String? phone,
+    String? whatsapp,
+  }) async {
+    final success = await _apiService.updateShopProfile(
+      name: name,
+      description: description,
+      category: category,
+      kecamatan: kecamatan,
+      phone: phone,
+      whatsapp: whatsapp,
+      token: _token,
+    );
+
+    _currentUser = _currentUser.copyWith(
+      shopName: name,
+      shopDescription: description,
+      shopCategory: category ?? _currentUser.shopCategory,
+      kecamatan: kecamatan ?? _currentUser.kecamatan,
+      phone: phone ?? _currentUser.phone,
+    );
+
+    if (success) {
+      triggerToast('Profil Toko Tersinkron!', 'Deskripsi & informasi toko berhasil diperbarui ke database.');
+    } else {
+      triggerToast('Profil Toko Diperbarui', 'Data toko berhasil diperbarui di perangkat.');
+    }
+    notifyListeners();
+    return success;
+  }
+
+  Future<bool> updateUserProfile({
+    required String name,
+    required String phone,
+    String? kecamatan,
+  }) async {
+    final success = await _apiService.updateUserProfile(
+      name: name,
+      phone: phone,
+      kecamatan: kecamatan,
+      token: _token,
+    );
+
+    _currentUser = _currentUser.copyWith(
+      name: name,
+      phone: phone,
+      kecamatan: kecamatan ?? _currentUser.kecamatan,
+    );
+
+    triggerToast('Profil Diperbarui', 'Data identitas warga berhasil diperbarui.');
+    notifyListeners();
+    return success;
   }
 }

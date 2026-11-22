@@ -278,39 +278,64 @@ class MarketplaceController extends Controller
 
     public function storeProduct(Request $request): JsonResponse
     {
-        abort_unless(in_array($request->user()->role, ['admin', 'penjual', 'keduanya'], true), 403, 'Akun ini tidak memiliki toko penjual.');
+        $user = $request->user();
+        abort_unless(in_array($user->role, ['admin', 'penjual', 'keduanya'], true), 403, 'Akun ini tidak memiliki toko penjual.');
+
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'price' => ['required', 'numeric', 'min:0'],
             'originalPrice' => ['nullable', 'numeric', 'min:0'],
-            'category' => ['required', 'string', Rule::exists('categories', 'id')],
-            'shopId' => ['required', 'string', Rule::exists('shops', 'id')],
+            'category' => ['required', 'string'],
+            'shopId' => ['nullable', 'string'],
             'kecamatan' => ['nullable', 'string', 'max:255'],
             'stock' => ['required', 'integer', 'min:0'],
             'images' => ['nullable', 'array'],
             'images.*' => ['string', 'max:2048'],
+            'image' => ['nullable', 'string', 'max:2048'],
             'description' => ['nullable', 'string'],
             'specifications' => ['nullable', 'array'],
             'reviews' => ['nullable', 'array'],
         ]);
-        abort_unless($request->user()->role === 'admin' || $validated['shopId'] === $request->user()->shop_id, 403, 'Produk hanya dapat ditambahkan ke toko milik akun ini.');
+
+        $shopId = $validated['shopId'] ?? $user->shop_id;
+        abort_unless($shopId, 422, 'ID Toko penjual tidak ditemukan.');
+        abort_unless($user->role === 'admin' || $shopId === $user->shop_id, 403, 'Produk hanya dapat ditambahkan ke toko milik akun ini.');
+
+        $shop = Shop::find($shopId);
+        $category = Category::where('id', $validated['category'])->orWhere('name', $validated['category'])->first();
+        $categoryId = $category?->id ?? 'kuliner';
+
+        // Syarat kurasi admin desa:
+        // Jika toko belum 'aktif' (masih 'menunggu' verifikasi admin) atau bukan admin,
+        // produk berstatus is_hidden = true (menunggu kurasi/approval admin desa) sebelum tayang publik.
+        $isShopActive = $shop && $shop->status === 'aktif';
+        $needsApproval = !$isShopActive || ($user->role !== 'admin');
+
+        $images = $validated['images'] ?? [];
+        if (empty($images) && !empty($validated['image'])) {
+            $images = [$validated['image']];
+        }
+        if (empty($images)) {
+            $images = ['assets/images/kain-lurik.jpg'];
+        }
 
         $product = Product::create([
             'id' => 'prod-'.Str::uuid(),
             'name' => $validated['name'],
             'price' => $validated['price'],
             'original_price' => $validated['originalPrice'] ?? null,
-            'category_id' => $validated['category'],
-            'shop_id' => $validated['shopId'],
-            'kecamatan' => $validated['kecamatan'] ?? null,
+            'category_id' => $categoryId,
+            'shop_id' => $shopId,
+            'kecamatan' => $validated['kecamatan'] ?? $shop?->kecamatan ?? $user->kecamatan,
             'stock' => $validated['stock'],
-            'images' => $validated['images'] ?? [],
+            'images' => $images,
             'description' => $validated['description'] ?? '',
             'specifications' => $validated['specifications'] ?? [],
             'reviews' => $validated['reviews'] ?? [],
             'rating' => 5,
             'sold' => 0,
             'is_new' => true,
+            'is_hidden' => $needsApproval,
         ]);
 
         return response()->json($this->serializeProduct($product->load(['category', 'shop'])), 201);
@@ -601,7 +626,9 @@ class MarketplaceController extends Controller
             'isFeatured' => $product->is_featured,
             'isPopular' => $product->is_popular,
             'isNew' => $product->is_new,
-            'isHidden' => $product->is_hidden,
+            'isHidden' => (bool) $product->is_hidden,
+            'image' => !empty($product->images) ? $product->images[0] : '/kain-lurik.jpg',
+            'imageUrl' => !empty($product->images) ? $product->images[0] : '/kain-lurik.jpg',
             'images' => $product->images ?? [],
             'description' => $product->description,
             'specifications' => $product->specifications ?? [],

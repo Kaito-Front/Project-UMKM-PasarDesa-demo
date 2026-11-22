@@ -12,6 +12,7 @@ class Product {
   final double rating;
   final int reviewCount;
   final bool isVerified;
+  final bool isHidden;
 
   Product({
     required this.id,
@@ -27,6 +28,7 @@ class Product {
     this.rating = 4.9,
     this.reviewCount = 28,
     this.isVerified = true,
+    this.isHidden = false,
   });
 
   factory Product.fromJson(Map<String, dynamic> json) {
@@ -44,6 +46,7 @@ class Product {
       rating: (json['rating'] is num) ? (json['rating'] as num).toDouble() : 4.9,
       reviewCount: json['reviewCount'] is int ? json['reviewCount'] : 24,
       isVerified: json['isVerified'] ?? true,
+      isHidden: json['isHidden'] ?? json['is_hidden'] ?? false,
     );
   }
 

@@ -5,6 +5,7 @@ import '../core/theme/desa_colors.dart';
 import '../core/widgets/desa_image.dart';
 import '../providers/app_provider.dart';
 import '../widgets/add_product_modal.dart';
+import '../widgets/edit_shop_modal.dart';
 
 class SellerDashboardScreen extends StatefulWidget {
   final int activeTab;
@@ -29,6 +30,15 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => const AddProductModal(),
+    );
+  }
+
+  void _openEditShop() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => const EditShopModal(),
     );
   }
 
@@ -63,33 +73,68 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    provider.currentUser.shopName ?? 'Griya Tenun Lurik Lestari',
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w900,
-                      color: DesaColors.primary,
-                    ),
+              Expanded(
+                child: GestureDetector(
+                  onTap: _openEditShop,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              provider.currentUser.shopName ?? 'Griya Tenun Lurik Lestari',
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w900,
+                                color: DesaColors.primary,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          const Icon(Icons.edit_note, size: 18, color: DesaColors.accent),
+                        ],
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        provider.currentUser.shopDescription?.isNotEmpty == true
+                            ? provider.currentUser.shopDescription!
+                            : 'Kelola operasional UMKM Sumedang',
+                        style: const TextStyle(fontSize: 11, color: DesaColors.muted),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 2),
-                  const Text(
-                    'Kelola operasional UMKM Sumedang',
-                    style: TextStyle(fontSize: 11, color: DesaColors.muted),
-                  ),
-                ],
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: DesaColors.highlight,
-                  borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Text(
-                  'Toko Aktif',
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 10),
+              ),
+              const SizedBox(width: 8),
+              GestureDetector(
+                onTap: _openEditShop,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: provider.currentUser.shopStatus == 'aktif'
+                        ? DesaColors.highlight
+                        : const Color(0xFFF57F17),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        provider.currentUser.shopStatus == 'aktif' ? Icons.check_circle : Icons.hourglass_top_rounded,
+                        size: 11,
+                        color: Colors.white,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        provider.currentUser.shopStatus == 'aktif' ? 'Toko Aktif' : 'Menunggu Approval',
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 10),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],
@@ -378,9 +423,29 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
                             style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: DesaColors.accent),
                           ),
                           const SizedBox(height: 2),
-                          Text(
-                            'Stok: ${p.stock} pcs • ${p.kecamatan}',
-                            style: const TextStyle(fontSize: 11, color: DesaColors.muted),
+                          Wrap(
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            children: [
+                              Text(
+                                'Stok: ${p.stock} pcs • ${p.kecamatan}',
+                                style: const TextStyle(fontSize: 11, color: DesaColors.muted),
+                              ),
+                              if (p.isHidden) ...[
+                                const SizedBox(width: 6),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFFFF8E1),
+                                    borderRadius: BorderRadius.circular(4),
+                                    border: Border.all(color: const Color(0xFFFFE082)),
+                                  ),
+                                  child: const Text(
+                                    'Review Admin',
+                                    style: TextStyle(fontSize: 8.5, fontWeight: FontWeight.bold, color: Color(0xFFE65100)),
+                                  ),
+                                ),
+                              ],
+                            ],
                           ),
                         ],
                       ),
@@ -579,42 +644,58 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: DesaColors.border.withValues(alpha: 0.8)),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 52,
-                  height: 52,
-                  decoration: BoxDecoration(
-                    color: DesaColors.accent,
-                    borderRadius: BorderRadius.circular(16),
+          GestureDetector(
+            onTap: _openEditShop,
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: DesaColors.border.withValues(alpha: 0.8)),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 52,
+                    height: 52,
+                    decoration: BoxDecoration(
+                      color: DesaColors.accent,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: const Center(child: Icon(Icons.storefront, color: Colors.white, size: 28)),
                   ),
-                  child: const Center(child: Icon(Icons.storefront, color: Colors.white, size: 28)),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        provider.currentUser.shopName ?? 'Griya Tenun Lurik Lestari',
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: DesaColors.primary),
-                      ),
-                      const SizedBox(height: 3),
-                      const Text(
-                        'Kec. Sumedang Selatan, Kab. Sumedang',
-                        style: TextStyle(fontSize: 11, color: DesaColors.muted),
-                      ),
-                    ],
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                provider.currentUser.shopName ?? 'Griya Tenun Lurik Lestari',
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: DesaColors.primary),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            const Icon(Icons.edit, size: 14, color: DesaColors.accent),
+                          ],
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          provider.currentUser.shopDescription?.isNotEmpty == true
+                              ? provider.currentUser.shopDescription!
+                              : 'Kec. Sumedang Selatan, Kab. Sumedang',
+                          style: const TextStyle(fontSize: 11, color: DesaColors.muted),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
           const SizedBox(height: 16),
@@ -629,11 +710,10 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
               children: [
                 ListTile(
                   leading: const Icon(Icons.edit_note, color: DesaColors.primary),
-                  title: const Text('Kelola Data Toko', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                  title: const Text('Kelola Data & Deskripsi Toko', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                  subtitle: const Text('Perbarui nama, deskripsi cerita usaha, dan kategori', style: TextStyle(fontSize: 11, color: DesaColors.muted)),
                   trailing: const Icon(Icons.chevron_right, size: 18),
-                  onTap: () {
-                    provider.triggerToast('Kelola Toko', 'Fitur edit data toko siap digunakan.');
-                  },
+                  onTap: _openEditShop,
                 ),
                 const Divider(height: 1),
                 ListTile(

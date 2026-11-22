@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../core/theme/desa_colors.dart';
 import '../providers/app_provider.dart';
+import '../widgets/edit_shop_modal.dart';
 import 'chat_ai_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
@@ -158,6 +159,30 @@ class ProfileScreen extends StatelessWidget {
               ),
               child: Column(
                 children: [
+                  ListTile(
+                    leading: const Icon(Icons.storefront, color: DesaColors.primary),
+                    title: const Text('Kelola Profil & Deskripsi Toko', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                    subtitle: Text(
+                      user.shopStatus == 'aktif'
+                          ? 'Toko Aktif • Lolos Kurasi BUMDes ✓'
+                          : 'Status: Menunggu Persetujuan Admin Desa ⏳',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: user.shopStatus == 'aktif' ? const Color(0xFF2E7D32) : const Color(0xFFE65100),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    trailing: const Icon(Icons.arrow_forward_ios, size: 14, color: DesaColors.muted),
+                    onTap: () {
+                      showModalBottomSheet(
+                        context: context,
+                        isScrollControlled: true,
+                        backgroundColor: Colors.transparent,
+                        builder: (_) => const EditShopModal(),
+                      );
+                    },
+                  ),
+                  const Divider(height: 1),
                   ListTile(
                     leading: const Icon(Icons.help_outline, color: DesaColors.accent),
                     title: const Text('Tampilkan Panduan Onboarding', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
