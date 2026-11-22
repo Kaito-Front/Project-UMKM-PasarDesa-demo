@@ -47,6 +47,37 @@ class UserModel {
     );
   }
 
+  static UserModel guest() {
+    return UserModel(
+      id: '',
+      name: 'Tamu Warga',
+      email: '',
+      phone: '',
+      role: 'pembeli',
+      shopStatus: 'menunggu',
+      shopVerified: false,
+      isEmailVerified: false,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'email': email,
+      'phone': phone,
+      'role': role,
+      'shopName': shopName,
+      'shopId': shopId,
+      'shopDescription': shopDescription,
+      'shopCategory': shopCategory,
+      'shopStatus': shopStatus,
+      'shopVerified': shopVerified,
+      'kecamatan': kecamatan,
+      'isEmailVerified': isEmailVerified,
+    };
+  }
+
   UserModel copyWith({
     String? id,
     String? name,

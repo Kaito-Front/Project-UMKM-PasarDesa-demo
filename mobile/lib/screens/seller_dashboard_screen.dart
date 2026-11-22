@@ -6,6 +6,7 @@ import '../core/widgets/desa_image.dart';
 import '../providers/app_provider.dart';
 import '../widgets/add_product_modal.dart';
 import '../widgets/edit_shop_modal.dart';
+import 'login_screen.dart';
 
 class SellerDashboardScreen extends StatefulWidget {
   final int activeTab;
@@ -45,6 +46,65 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<AppProvider>(context);
+
+    if (!provider.isLoggedIn) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                  color: DesaColors.accent.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: const Icon(Icons.storefront_rounded, size: 36, color: DesaColors.accent),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Dashboard Penjual UMKM',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: DesaColors.primary),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Silakan masuk dengan akun penjual UMKM Anda atau daftarkan toko baru untuk mulai berjualan.',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 13, color: DesaColors.muted),
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: DesaColors.accent,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  elevation: 0,
+                ),
+                icon: const Icon(Icons.login_rounded, size: 18),
+                label: const Text('Masuk / Buka Toko', style: TextStyle(fontWeight: FontWeight.bold)),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => LoginScreen(
+                        initialTab: 'masuk',
+                        initialRole: 'penjual',
+                        onSuccess: () {
+                          provider.setRole('penjual');
+                        },
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+      );
+    }
 
     switch (widget.activeTab) {
       case 0:

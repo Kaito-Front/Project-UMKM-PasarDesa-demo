@@ -417,22 +417,118 @@ class ApiService {
   }
 
   // Login to Backend
-  Future<Map<String, dynamic>?> login(String identifier, String password) async {
+  Future<Map<String, dynamic>> login(String identifier, String password) async {
     try {
       final res = await http.post(
         Uri.parse('${ApiConstants.activeBaseUrl}${ApiConstants.login}'),
         headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
-        body: jsonEncode({'identifier': identifier, 'password': password}),
+        body: jsonEncode({'identifier': identifier.trim(), 'password': password}),
+      ).timeout(const Duration(seconds: 10));
+
+      final decoded = jsonDecode(res.body);
+      if (res.statusCode == 200) {
+        return {
+          'success': true,
+          'token': decoded['token'],
+          'user': UserModel.fromJson(decoded['user']),
+        };
+      } else {
+        return {
+          'success': false,
+          'message': decoded['message'] ?? 'Nomor HP/email atau kata sandi tidak cocok.',
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Gagal terhubung ke server: ${e.toString()}',
+      };
+    }
+  }
+
+  // Register to Backend
+  Future<Map<String, dynamic>> register({
+    required String name,
+    required String phone,
+    required String password,
+    required String role, // 'belanja', 'jualan', 'keduanya'
+    String? shopName,
+    String? shopCategory,
+    String? kecamatan,
+  }) async {
+    try {
+      final payload = <String, dynamic>{
+        'name': name.trim(),
+        'phone': phone.trim(),
+        'password': password,
+        'role': role,
+      };
+      if (shopName != null && shopName.trim().isNotEmpty) payload['shopName'] = shopName.trim();
+      if (shopCategory != null && shopCategory.trim().isNotEmpty) payload['shopCategory'] = shopCategory;
+      if (kecamatan != null && kecamatan.trim().isNotEmpty) payload['kecamatan'] = kecamatan;
+
+      final res = await http.post(
+        Uri.parse('${ApiConstants.activeBaseUrl}${ApiConstants.register}'),
+        headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
+        body: jsonEncode(payload),
+      ).timeout(const Duration(seconds: 10));
+
+      final decoded = jsonDecode(res.body);
+      if (res.statusCode == 200 || res.statusCode == 201) {
+        return {
+          'success': true,
+          'token': decoded['token'],
+          'user': UserModel.fromJson(decoded['user']),
+        };
+      } else {
+        return {
+          'success': false,
+          'message': decoded['message'] ?? 'Pendaftaran akun gagal. Silakan periksa kembali data Anda.',
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Gagal terhubung ke server: ${e.toString()}',
+      };
+    }
+  }
+
+  // Get Current Authenticated User Profile
+  Future<UserModel?> getMe(String token) async {
+    try {
+      final res = await http.get(
+        Uri.parse('${ApiConstants.activeBaseUrl}${ApiConstants.me}'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
       ).timeout(const Duration(seconds: 8));
 
       if (res.statusCode == 200) {
         final decoded = jsonDecode(res.body);
-        return {
-          'token': decoded['token'],
-          'user': UserModel.fromJson(decoded['user']),
-        };
+        return UserModel.fromJson(decoded);
       }
     } catch (_) {}
     return null;
+  }
+
+  // Logout from Backend
+  Future<bool> logout(String? token) async {
+    if (token == null) return true;
+    try {
+      await http.post(
+        Uri.parse('${ApiConstants.activeBaseUrl}/auth/logout'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      ).timeout(const Duration(seconds: 5));
+      return true;
+    } catch (_) {
+      return false;
+    }
   }
 }

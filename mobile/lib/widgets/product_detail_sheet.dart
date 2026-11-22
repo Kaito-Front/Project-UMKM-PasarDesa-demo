@@ -7,6 +7,7 @@ import '../core/widgets/desa_image.dart';
 import '../data/models/product_model.dart';
 import '../providers/app_provider.dart';
 import '../screens/product_detail_screen.dart';
+import '../screens/login_screen.dart';
 
 /// Modal Bottom Sheet matching MobileAppView.jsx lines 1215-1290
 class ProductDetailSheet extends StatelessWidget {
@@ -140,6 +141,21 @@ class ProductDetailSheet extends StatelessWidget {
                   Expanded(
                     child: Bounceable(
                       onTap: () {
+                        if (!provider.isLoggedIn) {
+                          Navigator.pop(context);
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => LoginScreen(
+                                onSuccess: () {
+                                  provider.addToCart(product, qty: 1);
+                                  provider.triggerToast('Keranjang', '${product.name} ditambahkan');
+                                },
+                              ),
+                            ),
+                          );
+                          return;
+                        }
                         provider.addToCart(product, qty: 1);
                         provider.triggerToast('Keranjang', '${product.name} ditambahkan');
                         Navigator.pop(context);
@@ -173,6 +189,24 @@ class ProductDetailSheet extends StatelessWidget {
                   Expanded(
                     child: Bounceable(
                       onTap: () {
+                        if (!provider.isLoggedIn) {
+                          Navigator.pop(context);
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => LoginScreen(
+                                onSuccess: () {
+                                  provider.addToCart(product, qty: 1);
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(builder: (_) => ProductDetailScreen(product: product)),
+                                  );
+                                },
+                              ),
+                            ),
+                          );
+                          return;
+                        }
                         provider.addToCart(product, qty: 1);
                         Navigator.pop(context);
                         Navigator.push(

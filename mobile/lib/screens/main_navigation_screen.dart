@@ -9,6 +9,7 @@ import 'orders_screen.dart';
 import 'profile_screen.dart';
 import 'seller_dashboard_screen.dart';
 import 'chat_ai_screen.dart';
+import 'login_screen.dart';
 import '../widgets/splash_overlay.dart';
 import '../widgets/onboarding_modal.dart';
 import '../widgets/push_toast.dart';
@@ -170,6 +171,22 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                 Bounceable(
                   scaleFactor: 0.94,
                   onTap: () {
+                    if (!provider.isLoggedIn) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => LoginScreen(
+                            initialTab: 'masuk',
+                            initialRole: 'penjual',
+                            onSuccess: () {
+                              provider.setRole('penjual');
+                              setState(() => _sellerIndex = 0);
+                            },
+                          ),
+                        ),
+                      );
+                      return;
+                    }
                     provider.setRole('penjual');
                     setState(() => _sellerIndex = 0);
                     provider.triggerToast('Beralih Mode', 'Sekarang Anda berada di Mode Penjual UMKM');

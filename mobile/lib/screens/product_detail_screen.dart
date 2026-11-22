@@ -6,6 +6,7 @@ import '../core/widgets/lurik_divider.dart';
 import '../core/widgets/desa_image.dart';
 import '../data/models/product_model.dart';
 import '../providers/app_provider.dart';
+import 'login_screen.dart';
 
 class ProductDetailScreen extends StatefulWidget {
   final Product product;
@@ -293,6 +294,27 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with SingleTi
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                   ),
                   onPressed: () {
+                    if (!provider.isLoggedIn) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => LoginScreen(
+                            onSuccess: () {
+                              provider.addToCart(widget.product, qty: _qty);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('$_qty ${widget.product.name} dimasukkan ke keranjang'),
+                                  backgroundColor: DesaColors.primary,
+                                  behavior: SnackBarBehavior.floating,
+                                  duration: const Duration(seconds: 2),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      );
+                      return;
+                    }
                     provider.addToCart(widget.product, qty: _qty);
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
@@ -331,6 +353,27 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with SingleTi
                       elevation: 0,
                     ),
                     onPressed: () {
+                      if (!provider.isLoggedIn) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => LoginScreen(
+                              onSuccess: () {
+                                provider.addToCart(widget.product, qty: _qty);
+                                Navigator.pop(context);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Produk siap dicheckout dari keranjang!'),
+                                    backgroundColor: DesaColors.accent,
+                                    behavior: SnackBarBehavior.floating,
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        );
+                        return;
+                      }
                       provider.addToCart(widget.product, qty: _qty);
                       Navigator.pop(context); // Back to caller and user can tap cart
                       ScaffoldMessenger.of(context).showSnackBar(

@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../core/theme/desa_colors.dart';
 import '../providers/app_provider.dart';
+import 'login_screen.dart';
 
 class CartScreen extends StatelessWidget {
   const CartScreen({super.key});
@@ -38,6 +39,20 @@ class CartScreen extends StatelessWidget {
   ];
 
   void _showCheckoutSheet(BuildContext context, AppProvider provider) {
+    if (!provider.isLoggedIn) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => LoginScreen(
+            onSuccess: () {
+              _showCheckoutSheet(context, provider);
+            },
+          ),
+        ),
+      );
+      return;
+    }
+
     String selectedKec = _sumedangKecamatan[0];
     final addressCtrl = TextEditingController(text: 'Dusun Mekarsari RT 02/RW 03');
     final nameCtrl = TextEditingController(text: provider.currentUser.name);

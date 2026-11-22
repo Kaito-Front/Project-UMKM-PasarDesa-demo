@@ -5,6 +5,7 @@ import '../core/theme/desa_colors.dart';
 import '../core/widgets/desa_image.dart';
 import '../providers/app_provider.dart';
 import 'product_detail_screen.dart';
+import 'login_screen.dart';
 
 class CatalogScreen extends StatelessWidget {
   const CatalogScreen({super.key});
@@ -267,6 +268,19 @@ class CatalogScreen extends StatelessWidget {
                                           ),
                                           InkWell(
                                             onTap: () {
+                                              if (!provider.isLoggedIn) {
+                                                Navigator.push(
+                                                  context,
+                                                  MaterialPageRoute(
+                                                    builder: (_) => LoginScreen(
+                                                      onSuccess: () {
+                                                        provider.addToCart(product);
+                                                      },
+                                                    ),
+                                                  ),
+                                                );
+                                                return;
+                                              }
                                               provider.addToCart(product);
                                               ScaffoldMessenger.of(context).showSnackBar(
                                                 SnackBar(

@@ -8,6 +8,7 @@ import '../core/widgets/lurik_divider.dart';
 import '../providers/app_provider.dart';
 import '../widgets/product_detail_sheet.dart';
 import 'chat_ai_screen.dart';
+import 'login_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   final Function(int) onNavigateTab;
@@ -379,6 +380,20 @@ class HomeScreen extends StatelessWidget {
                                   Expanded(
                                     child: Bounceable(
                                       onTap: () {
+                                        if (!provider.isLoggedIn) {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (_) => LoginScreen(
+                                                onSuccess: () {
+                                                  provider.addToCart(p, qty: 1);
+                                                  provider.triggerToast('Keranjang', '${p.name} ditambahkan');
+                                                },
+                                              ),
+                                            ),
+                                          );
+                                          return;
+                                        }
                                         provider.addToCart(p, qty: 1);
                                         provider.triggerToast('Keranjang', '${p.name} ditambahkan');
                                       },
@@ -410,6 +425,20 @@ class HomeScreen extends StatelessWidget {
                                   Expanded(
                                     child: Bounceable(
                                       onTap: () {
+                                        if (!provider.isLoggedIn) {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (_) => LoginScreen(
+                                                onSuccess: () {
+                                                  provider.addToCart(p, qty: 1);
+                                                  ProductDetailSheet.show(context, p);
+                                                },
+                                              ),
+                                            ),
+                                          );
+                                          return;
+                                        }
                                         provider.addToCart(p, qty: 1);
                                         ProductDetailSheet.show(context, p);
                                       },

@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../data/models/product_model.dart';
 import '../data/models/category_model.dart';
 import '../data/models/order_model.dart';
@@ -20,6 +22,9 @@ class CartEntry {
 }
 
 class AppProvider with ChangeNotifier {
+  static const String _tokenPrefKey = 'pasardesa_mobile_token';
+  static const String _userPrefKey = 'pasardesa_mobile_user';
+
   final ApiService _apiService = ApiService();
 
   List<Product> _products = [];
@@ -28,15 +33,9 @@ class AppProvider with ChangeNotifier {
   final List<CartEntry> _cart = [];
   final Set<String> _favorites = {};
 
-  UserModel _currentUser = UserModel(
-    id: 'USR-2026-01',
-    name: 'Warga Mandiri',
-    email: 'warga.sumedang@pasardesa.id',
-    phone: '081915194171',
-    role: 'pembeli',
-    shopName: 'Griya Tenun Lurik Lestari',
-    shopId: 'shop-001',
-  );
+  UserModel? _currentUser;
+  String? _token;
+  bool _isAuthLoading = false;
 
   bool _isLoading = false;
   String _selectedCategory = 'semua';
@@ -52,6 +51,11 @@ class AppProvider with ChangeNotifier {
   String get currentRole => _currentRole;
   String? get toastTitle => _toastTitle;
   String? get toastMessage => _toastMessage;
+  UserModel get currentUser => _currentUser ?? UserModel.guest();
+  UserModel? get rawCurrentUser => _currentUser;
+  bool get isLoggedIn => _token != null && _currentUser != null;
+  bool get isAuthLoading => _isAuthLoading;
+  String? get token => _token;
 
   List<Product> get products {
     return _products.where((p) {
@@ -83,7 +87,6 @@ class AppProvider with ChangeNotifier {
   int get cartCount => _cart.fold(0, (sum, i) => sum + i.qty);
   int get cartSubtotal => _cart.fold(0, (sum, i) => sum + i.subtotal);
   Set<String> get favorites => _favorites;
-  UserModel get currentUser => _currentUser;
   bool get isLoading => _isLoading;
   String get selectedCategory => _selectedCategory;
   String get selectedKecamatan => _selectedKecamatan;
@@ -99,6 +102,32 @@ class AppProvider with ChangeNotifier {
   Future<void> initData() async {
     _isLoading = true;
     notifyListeners();
+
+    // Restore cached session from SharedPreferences
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final savedToken = prefs.getString(_tokenPrefKey);
+      final savedUserJson = prefs.getString(_userPrefKey);
+
+      if (savedUserJson != null && savedUserJson.isNotEmpty) {
+        _currentUser = UserModel.fromJson(jsonDecode(savedUserJson));
+        if (_currentUser!.role == 'penjual' || _currentUser!.role == 'keduanya') {
+          _currentRole = 'penjual';
+        }
+      }
+
+      if (savedToken != null && savedToken.isNotEmpty) {
+        _token = savedToken;
+        final freshUser = await _apiService.getMe(savedToken);
+        if (freshUser != null) {
+          _currentUser = freshUser;
+          await prefs.setString(_userPrefKey, jsonEncode(freshUser.toJson()));
+          if (_currentUser!.role == 'penjual' || _currentUser!.role == 'keduanya') {
+            _currentRole = 'penjual';
+          }
+        }
+      }
+    } catch (_) {}
 
     final fetchedProds = await _apiService.getProducts();
     final fetchedCats = await _apiService.getCategories();
@@ -226,19 +255,24 @@ class AppProvider with ChangeNotifier {
     }
   }
 
+  Future<void> _saveUserToPrefs() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      if (_currentUser != null) {
+        await prefs.setString(_userPrefKey, jsonEncode(_currentUser!.toJson()));
+      } else {
+        await prefs.remove(_userPrefKey);
+      }
+    } catch (_) {}
+  }
+
   // Switch role between Pembeli and Penjual
   void setRole(String role) {
     _currentRole = role;
-    _currentUser = UserModel(
-      id: _currentUser.id,
-      name: _currentUser.name,
-      email: _currentUser.email,
-      phone: _currentUser.phone,
-      role: role,
-      shopName: _currentUser.shopName,
-      shopId: _currentUser.shopId,
-      isEmailVerified: _currentUser.isEmailVerified,
-    );
+    if (_currentUser != null) {
+      _currentUser = _currentUser!.copyWith(role: role);
+      _saveUserToPrefs();
+    }
     notifyListeners();
   }
 
@@ -277,17 +311,112 @@ class AppProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  String? _token;
-  String? get token => _token;
   void setToken(String? t) {
     _token = t;
     notifyListeners();
+  }
+
+  // Authentication: Login
+  Future<Map<String, dynamic>> login(String identifier, String password) async {
+    _isAuthLoading = true;
+    notifyListeners();
+
+    final res = await _apiService.login(identifier, password);
+    _isAuthLoading = false;
+
+    if (res['success'] == true && res['token'] != null && res['user'] != null) {
+      _token = res['token'];
+      _currentUser = res['user'] as UserModel;
+      if (_currentUser!.role == 'penjual' || _currentUser!.role == 'keduanya') {
+        _currentRole = 'penjual';
+      } else {
+        _currentRole = 'pembeli';
+      }
+
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString(_tokenPrefKey, _token!);
+        await prefs.setString(_userPrefKey, jsonEncode(_currentUser!.toJson()));
+      } catch (_) {}
+
+      triggerToast('Berhasil Masuk!', 'Selamat datang, ${_currentUser!.name}');
+    }
+    notifyListeners();
+    return res;
+  }
+
+  // Authentication: Register
+  Future<Map<String, dynamic>> register({
+    required String name,
+    required String phone,
+    required String password,
+    required String role,
+    String? shopName,
+    String? shopCategory,
+    String? kecamatan,
+  }) async {
+    _isAuthLoading = true;
+    notifyListeners();
+
+    final res = await _apiService.register(
+      name: name,
+      phone: phone,
+      password: password,
+      role: role,
+      shopName: shopName,
+      shopCategory: shopCategory,
+      kecamatan: kecamatan,
+    );
+    _isAuthLoading = false;
+
+    if (res['success'] == true && res['token'] != null && res['user'] != null) {
+      _token = res['token'];
+      _currentUser = res['user'] as UserModel;
+      if (_currentUser!.role == 'penjual' || _currentUser!.role == 'keduanya') {
+        _currentRole = 'penjual';
+      } else {
+        _currentRole = 'pembeli';
+      }
+
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString(_tokenPrefKey, _token!);
+        await prefs.setString(_userPrefKey, jsonEncode(_currentUser!.toJson()));
+      } catch (_) {}
+
+      triggerToast('Pendaftaran Berhasil!', 'Akun ${_currentUser!.name} berhasil dibuat.');
+    }
+    notifyListeners();
+    return res;
+  }
+
+  // Authentication: Logout
+  Future<void> logout() async {
+    final oldToken = _token;
+    _token = null;
+    _currentUser = null;
+    _currentRole = 'pembeli';
+    _cart.clear();
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_tokenPrefKey);
+      await prefs.remove(_userPrefKey);
+    } catch (_) {}
+
+    triggerToast('Berhasil Keluar', 'Anda telah keluar dari akun.');
+    notifyListeners();
+
+    if (oldToken != null) {
+      await _apiService.logout(oldToken);
+    }
   }
 
   Future<void> addProduct(Product product) async {
     _isLoading = true;
     notifyListeners();
 
+    final shopId = currentUser.shopId ?? 'toko-1';
     final created = await _apiService.createProduct(
       name: product.name,
       price: product.price,
@@ -295,7 +424,7 @@ class AppProvider with ChangeNotifier {
       category: product.category,
       description: product.description,
       kecamatan: product.kecamatan,
-      shopId: _currentUser.shopId,
+      shopId: shopId,
       imageUrl: product.imageUrl,
       token: _token,
     );
@@ -334,13 +463,14 @@ class AppProvider with ChangeNotifier {
       token: _token,
     );
 
-    _currentUser = _currentUser.copyWith(
+    _currentUser = currentUser.copyWith(
       shopName: name,
       shopDescription: description,
-      shopCategory: category ?? _currentUser.shopCategory,
-      kecamatan: kecamatan ?? _currentUser.kecamatan,
-      phone: phone ?? _currentUser.phone,
+      shopCategory: category ?? currentUser.shopCategory,
+      kecamatan: kecamatan ?? currentUser.kecamatan,
+      phone: phone ?? currentUser.phone,
     );
+    _saveUserToPrefs();
 
     if (success) {
       triggerToast('Profil Toko Tersinkron!', 'Deskripsi & informasi toko berhasil diperbarui ke database.');
@@ -363,11 +493,12 @@ class AppProvider with ChangeNotifier {
       token: _token,
     );
 
-    _currentUser = _currentUser.copyWith(
+    _currentUser = currentUser.copyWith(
       name: name,
       phone: phone,
-      kecamatan: kecamatan ?? _currentUser.kecamatan,
+      kecamatan: kecamatan ?? currentUser.kecamatan,
     );
+    _saveUserToPrefs();
 
     triggerToast('Profil Diperbarui', 'Data identitas warga berhasil diperbarui.');
     notifyListeners();
